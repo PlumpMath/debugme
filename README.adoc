@@ -1,0 +1,63 @@
+= Debugme
+
+Because stack traces are *nice*
+
+== Details
+
+Display a stack trace to the console when a Swift program hits a fatal trap
+(array out of bounds, assert failed, etc.)
+
+This uses a tiny bit of careful C code to register a signal handler for the
++SIGILL+ (Illegal Instruction) signal.   If the signal fires, it launches a
+debugger (gdb, although lldb would work too) to attach and dump the thread
+back trace(s).
+
+Writing it in pure Swift code is not recommended; neither the language nor the
+standard library makes guarantees about signal-handler safety.
+
+Luckily, Swift's interop with C is very easy, as this project demonstrates.
+
+
+== Example
+
+----
+make      # build library and test program
+./test    # run test program
+
+Hello
+fatal error: Index out of range: file ContiguousArrayBuffer.swift, line 366
+In debugme_sig_handler - launching debugger
+...
+#6  0x0000000000401176 in _TF4test3fooFT_T_ () at test.swift:6
+        v = {pointer = 0x10b4c20}
+#7  0x00000000004011f9 in _TF4test3barFT_T_ () at test.swift:11
+No locals.
+#8  0x00000000004010fc in main () at test.swift:16
+No locals.
+----
+
+Yeah, un-demangling is an exercise for the reader.  But you can still see the
+main -> bar -> foo call order.
+
+== Installation
+
+NOTE: On Ubuntu, you might need to run "echo 0 | sudo tee
+/proc/sys/kernel/yama/ptrace_scope" to allow process debugging.
+
+NOTE: On Mac, I got "error: attach failed: cannot attach to process due to
+System Integrity Protection".  If you know how to fix this (the internet
+appears not to know), let me know.
+
+== Alternatives
+
+On Linux, the core dump pattern can use "|" to pipe it through a process.
+This is fine - this is how +abrt+ works - but ptrace is non functional (it
+hangs when I try to attach to the dying process).  
+
+Assume you have very large (gigabytes) of address space, and/or have limited
+disk space and IO bandwidth to store core dumps.
+
+So the only other way to get a "slim" stack trace seems to be the (defunct?) 
+link:https://code.google.com/p/cortex-tool/[cortex project],
+which has smart "streaming" decode of the core dump.
+

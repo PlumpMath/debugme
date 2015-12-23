@@ -1,0 +1,4 @@
+module Debugme [system] {
+    header "debugme.h"
+    export *
+}

@@ -1,0 +1,3 @@
+This creates the swift "module" that the swift code links to.
+It exports the "debugme.h" header.
+
